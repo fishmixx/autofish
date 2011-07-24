@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<ices>
+	<background>0</background>
+	<loglevel>2</loglevel>
+	<consolelog>1</consolelog>
+	
+	<pidfile>/tmp/ices2.pid</pidfile>
+	
+	<stream>
+		<metadata>
+			<name>some creative radio</name>
+			<genre>creative commmons</genre>
+			<description>Thats our try for a better CreativeCommons Radio</description>
+			<url>http://s3.caracl.de:8000</url>
+		</metadata>
+		
+		<input>
+			<module>alsa</module>
+			<param name="rate">44100</param>
+			<param name="channels">2</param>
+			<param name="device">jackin</param>
+			
+			<param name="metadata">1</param>
+			<param name="metadatafilename">/tmp/ices-metadata</param>
+		</input>
+		
+		<instance>
+			<hostname>s3.caracl.de</hostname>
+			<port>8000</port>
+			<password>*********************</password>
+			<mount>/radio.ogg</mount>
+			
+			<yp>0</yp>
+			
+			<encode> 
+				<quality>-1</quality>	
+				<samplerate>44100</samplerate>
+				<channels>2</channels>
+			</encode>
+			<downmix>0</downmix>
+		</instance>
+		
+	</stream>
+</ices>
