@@ -112,7 +112,7 @@ def makeModeration(title, artist, Last_TTS_Phrase):
 # function to start the streaming mplayer instance, feed it with the playlist and change the title after each track
 def startPlayer(Playlist_Count):
 	# make a new mplayer instance
-	player = mplayer.Player(args="-ao jack")
+	player = mplayer.Player(args="-ao 'jack:port=alsa-jack.jackC.{0}.0:name=autofish'".format(Ices_PID))
 	# load the playlist
 	player.loadlist(Playlist_File)
 	

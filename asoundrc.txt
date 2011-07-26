@@ -7,8 +7,8 @@ pcm.jackin {
 pcm.jack {
     type jack
     capture_ports {
-        0 moc:output0
-        1 moc:output1
+        0 system:capture_1
+        1 system:capture_2
     }
     playback_ports {
         0 system:playback_1

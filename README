@@ -11,7 +11,6 @@ How-To autofish:
 		•	ices2
 		•	libasound2-plugins
 		•	python-pip
-		•	qjackctl
 	Archlinux:
 		From the repositories:
 			•	espeak
@@ -19,7 +18,6 @@ How-To autofish:
 			•	jack	(_NOT_ jack2)
 			•	alsa-utils
 			•	python-pip
-			•	qjackctl
 		From the AUR:
 			•	mbrola
 			•	mbrola-voices-us1
@@ -33,11 +31,8 @@ How-To autofish:
 			
 4)	Start jackd with a dummy sound interface:
 		$ jackd -r -ddummy -r44100 -p1024
-	
-5)	Start qjackctl to control the connections
-		$ qjackctl
 		
-6)	Configure and start ices2 :
+5)	Configure and start ices2 :
 		1)	Open the ices2.xml with your editor of choice and change the
 			values as you need it, the file is documented at
 			http://icecast.org/docs/ices-2.0.0/
@@ -46,7 +41,7 @@ How-To autofish:
 		3)	Start ices2
 				$ ices2 ices2.xml
 		
-7)	Configure and start the autofish start.py script:
+6)	Configure and start the autofish start.py script:
 		1)	Open the start.py file with your editor of choice
 		2)	Change the values under the comment "# SETTINGS" as you need 
 			it
