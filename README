@@ -3,33 +3,41 @@ How-To autofish:
 
 1) Install all dependencies:
 	Debian:
-		•	python-pymad
 		•	espeak
 		•	mbrola
 		•	mbrola-us1
-		•	moc
+		•	mplayer
 		•	jackd1	(_NOT_ jackd//jackd2)
 		•	ices2
 		•	libasound2-plugins
+		•	python-pip
+		•	qjackctl
 	Archlinux:
 		From the repositories:
-			•	pymad
 			•	espeak
 			•	moc
 			•	jack	(_NOT_ jack2)
 			•	alsa-utils
+			•	python-pip
+			•	qjackctl
 		From the AUR:
 			•	mbrola
 			•	mbrola-voices-us1
 			•	ices2
 			
-2)	Configure your alsa for a virtual sound interface to jack:
+2)	Install pymplayer
+		# pip install pymplayer
+		
+3)	Configure your alsa for a virtual sound interface to jack:
 		-->	Put the content of the asoundrc.txt in your ~/.asoundrc
 			
-3)	Start jackd with a dummy sound interface:
+4)	Start jackd with a dummy sound interface:
 		$ jackd -r -ddummy -r44100 -p1024
+	
+5)	Start qjackctl to control the connections
+		$ qjackctl
 		
-4)	Configure and start ices2 :
+6)	Configure and start ices2 :
 		1)	Open the ices2.xml with your editor of choice and change the
 			values as you need it, the file is documented at
 			http://icecast.org/docs/ices-2.0.0/
@@ -37,11 +45,8 @@ How-To autofish:
 				$ touch /tmp/ices-metadata
 		3)	Start ices2
 				$ ices2 ices2.xml
-
-5)	Start mocp as server:
-		$ mocp -S
 		
-6)	Configure and start the autofish start.py script:
+7)	Configure and start the autofish start.py script:
 		1)	Open the start.py file with your editor of choice
 		2)	Change the values under the comment "# SETTINGS" as you need 
 			it
@@ -49,9 +54,4 @@ How-To autofish:
 				$ mkdir /tmp/moderation
 		4)	Start the script
 				$ python(2) start.py
-		
-7) Start the mocp playlist
-		$ mocp -p
-		
-8) Start the metadata watcher
-		$ python(2) titel.py
+		5)	Enjoy your radio program while your computer is moderating it :)

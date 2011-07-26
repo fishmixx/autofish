@@ -4,19 +4,24 @@
 # By Leonard Techel, 2011
 # It works a bit like http://www.paste42.de/1449/ from Andreas Deutschmann, but its written completely from the ground (excepting some functions I made before for the other script)
 # Depends on:
-# • Python < 3
-# • pymad
+# •	Python < 3
+# •	mplayer
+# •	pymplayer (http://code.google.com/p/python-mplayer)
 # • espeak
-# •	moc
-# Works only with MP3-Files, no OGG Vorbis support yet
-# You _have to_ (re)name your mp3 files in this style: [artist]-[title].mp3. Replace spaces with _ and delete all special chars (like ' or äöü).
+# You _have to_ (re)name your mp3 files in this style: [artist]-[title].mp3. Replace spaces with _ and delete all chars who are not [a-zA-Z0-9].
 
-import os, mad, random
+import os, random, mplayer, time
 from subprocess import Popen
 
 # SETTINGS
 Music_Dir = "/home/leonard/Musik"
+
+Ices_Title_File = "/tmp/ices-metadata"
+Ices_PID_File = "/tmp/ices2.pid"
+
 Playlist_Length = 60
+Playlist_File = "/tmp/playlist"
+
 TTS_Dir = "/tmp/moderation"
 TTS_Voice = "mb-us1"
 TTS_Speed = 130
@@ -32,6 +37,13 @@ TTS_Phrases = [
 random_files = [ ]
 Last_TTS_Phrase = -1
 Current_Length = 0
+Playlist_Count = 0
+
+# PROGRAM
+
+# function to handle the log output
+def log(message):
+	print message
 
 # function to make a recursiv file listing of a directory, returns a list with pathes
 def makeTree(DIR):
@@ -51,11 +63,11 @@ def getRandomFromList(LIST):
 	
 # function to get the length of a title in minutes, returns the length in minutes
 def getTitleLength(FILE):
-	tf = mad.MadFile(FILE)
-	msTime = tf.total_time()
-	sTime = msTime / 1000
-	mTime = sTime / 60
-	return mTime
+	lplayer = mplayer.Player()
+	lplayer.loadfile(unicode(FILE))
+	length = lplayer.length
+	lplayer.quit() 
+	return int(length)
 	
 # function to execute something at the command line, returns the exit code
 def toSystem(COMMAND):
@@ -69,7 +81,10 @@ def getTags(PATH):
 	s_path = os.path.split(PATH)
 	s_path = s_path[1]
 	ss_path = s_path.split("-")
-	title = ss_path[1].replace(".mp3", "")
+	# split file ending and title name
+	title = ss_path[1].split(".")
+	title = title[0]
+	# the artist
 	artist = ss_path[0]
 			
 	return title, artist
@@ -94,15 +109,59 @@ def makeModeration(title, artist, Last_TTS_Phrase):
 	# return the wav path
 	return wav_path
 	
+# function to start the streaming mplayer instance, feed it with the playlist and change the title after each track
+def startPlayer(Playlist_Count):
+	# make a new mplayer instance
+	player = mplayer.Player(args="-ao jack")
+	# load the playlist
+	player.loadlist(Playlist_File)
+	
+	# start the track waiter for the icecast title info
+	a = 0
+	while a < Playlist_Count:
+		# wait for a second
+		time.sleep(1)
+		# make the title info
+		metadata = player.metadata
+		# check for metadata, moderation WAV files have no tags
+		if metadata != None:
+			print "Now playing: {0} - {1}".format(metadata["Artist"], metadata["Title"])
+			metadata = "artist={0}\ntitle={1}\n".format(metadata["Artist"], metadata["Title"])
+			# set the title info
+			tinfo = open(Ices_Title_File, "w")
+			tinfo.write(metadata)
+			tinfo.close()
+			# send a signal to the ices process
+			toSystem("kill -usr1 {0}".format(Ices_PID))
+		# get the remaining title length
+		remaining = player.length - player.time_pos
+		# wait for the end
+		time.sleep(int(remaining))
+		# count a one up
+		a += 1
+		
+	# stop the mplayer instance
+	player.quit()
+	print "job done."
+	
 if __name__ == "__main__":
 	# clear the moderation directory
-	toSystem("rm {0}/*".format(TTS_Dir))
-	
-	# clear mocp
-	toSystem("mocp -c")
+	for item in os.listdir(TTS_Dir):
+		os.unlink(os.path.join(TTS_Dir, item))
+		
+	# open the playlist file
+	pl = open(Playlist_File, "w")
 	
 	# get the random file list
 	files = makeTree(Music_Dir)
+	
+	# get ices pid number
+	pidf = open(Ices_PID_File, "r")
+	Ices_PID = pidf.read()
+	pidf.close()
+	
+	# make seconds of the paylist length
+	Playlist_Length = Playlist_Length * 60
 	
 	# make the playlist
 	while Current_Length < Playlist_Length:
@@ -124,9 +183,17 @@ if __name__ == "__main__":
 				random_files.append(out)
 				# make the new Current_Length
 				Current_Length = new_length
+				# count the Playlist_Count up
+				Playlist_Count += 1
 			else:
 				break
 			
-	# put the playlist into mocp
-	for i in random_files:
-		toSystem("mocp -a '{0}'".format(i))
+	# put the tracks and there moderation into the playlist file
+	for item in random_files:
+		pl.write("{0}\n".format(item))
+		
+	# close the playlist file
+	pl.close()
+	
+	# start the streaming mplayer instance
+	startPlayer(Playlist_Count)
