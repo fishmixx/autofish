@@ -4,9 +4,9 @@
 # By Leonard Techel, 2011
 # It works a bit like http://www.paste42.de/1449/ from Andreas Deutschmann, but its written completely from the ground (excepting some functions I made before for the other script)
 # Depends on:
-# •	Python < 3
-# •	mplayer
-# •	pymplayer (http://code.google.com/p/python-mplayer)
+# • Python < 3
+# • mplayer
+# • pymplayer (http://code.google.com/p/python-mplayer)
 # • espeak
 # You _have to_ (re)name your mp3 files in this style: [artist]-[title].mp3. Replace spaces with _ and delete all chars who are not [a-zA-Z0-9].
 
@@ -14,12 +14,14 @@ import os, random, mplayer, time, wave, shutil
 from subprocess import Popen
 
 # SETTINGS
+Log = "/tmp/autofishlog"	# "console" or a filepath
+
 Music_Dir = "/home/leonard/Music/Playlist2"
 
 Ices_Title_File = "/tmp/ices-metadata"
 Ices_PID_File = "/tmp/ices2.pid"
 
-Playlist_Length = 60
+Playlist_Length = 60		# length of the playlist in minutes
 Playlist_File = "/tmp/playlist"
 
 TTS_Dir = "/tmp/moderation"
@@ -50,29 +52,45 @@ Jingle_Count = 0
 
 # PROGRAM
 
+# function to make the log
+def log(message):
+	# append the timestamp
+	message = "{0} | {1}".format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), message)
+	# check for console or file
+	if Log == "console":
+		print(message)
+	else:
+		try:
+			f = open(Log, "a")
+			f.write(message + "\n")
+			f.close()
+		except:
+			exit("Could not write into the logfile.")
+
 # function to make a stereo wav file from a mono wav file
 def makeStereoFromMono(monofile, stereofile):
 	# look for the same
 	if monofile == stereofile:
 		stereofile = "/tmp/42makeMeStereo1337.wav"
+		samefile = True
 	# open the files
-	monofile = wave.open(monofile, "r")
-	stereofile = wave.open(stereofile, "w")
+	fmonofile = wave.open(monofile, "r")
+	fstereofile = wave.open(stereofile, "w")
 	# get some values
-	samplerate = monofile.getframerate()
-	samplewidth = monofile.getsampwidth()
-	frames = monofile.readframes(monofile.getnframes())
+	samplerate = fmonofile.getframerate()
+	samplewidth = fmonofile.getsampwidth()
+	frames = fmonofile.readframes(fmonofile.getnframes())
 	# set some values
-	stereofile.setnchannels(2)
-	stereofile.setsampwidth(samplewidth)
-	stereofile.setframerate(samplerate / 2)
+	fstereofile.setnchannels(2)
+	fstereofile.setsampwidth(samplewidth)
+	fstereofile.setframerate(samplerate / 2)
 	# put the mono file two times into the stereo file
-	stereofile.writeframes(frames)
+	fstereofile.writeframes(frames)
 	# close both
-	stereofile.close()
-	monofile.close()
+	fstereofile.close()
+	fmonofile.close()
 	# look again for the same
-	if monofile == stereofile:
+	if samefile == True:
 		# move the stereo file over the mono file
 		shutil.move(stereofile, monofile)
 		
@@ -127,6 +145,7 @@ def makeModeration(title, artist, Last_TTS_Phrase):
 	phrase = getRandomFromList(TTS_Phrases)
 	while Last_TTS_Phrase == phrase[0]:
 		phrase = getRandomFromList(TTS_Phrases)
+	log("Make moderation with phrase {0}".format(phrase[1]))
 	Last_TTS_Phrase = phrase[0]
 	phrase = phrase[1]
 	# replace the placeholder
@@ -158,7 +177,7 @@ def startPlayer(Playlist_Count):
 		if player.filename[0:2] != "M_":
 			# make the title info
 			title, artist = getTags(player.filepath)
-			print("Now playing: {0} - {1}".format(artist, title))
+			log("Now playing: {0} - {1}".format(artist, title))
 			metadata = "artist={0}\ntitle={1}\n".format(artist, title)
 			# set the title info
 			tinfo = open(Ices_Title_File, "w")
@@ -175,7 +194,7 @@ def startPlayer(Playlist_Count):
 		
 	# stop the mplayer instance
 	player.quit()
-	print("job done.")
+	log("job done.")
 	
 if __name__ == "__main__":
 	# clear the moderation directory
@@ -202,6 +221,7 @@ if __name__ == "__main__":
 		out = getRandomFromList(files)[1]
 		# look for the file in the playlist list
 		if out not in random_files:
+			log("Add track {0}".format(out))
 			# get the length of the new title
 			out_length = getTitleLength(out)
 			new_length = Current_Length + out_length
@@ -214,6 +234,7 @@ if __name__ == "__main__":
 					jingle = getRandomFromList(Jingles)
 					while jingle[0] == Last_Jingle_Phrase:
 						jingle = getRandomFromList(Jingles)
+					log("Add jingle {0}".format(jingle[0]))
 					# make the jingle
 					wav_path = "{0}/M_J_{1}.wav".format(TTS_Dir, Playlist_Count)
 					command = "espeak -v {0} -s {1} -w '{2}' '{3}'".format(TTS_Voice, TTS_Speed, wav_path, jingle[1])
