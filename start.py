@@ -10,7 +10,7 @@
 # • espeak
 # You _have to_ (re)name your mp3 files in this style: [artist]-[title].mp3. Replace spaces with _ and delete all chars who are not [a-zA-Z0-9].
 
-import os, random, mplayer, time
+import os, random, mplayer, time, wave, shutil
 from subprocess import Popen
 
 # SETTINGS
@@ -49,6 +49,33 @@ Playlist_Count = 0
 Jingle_Count = 0
 
 # PROGRAM
+
+# function to make a stereo wav file from a mono wav file
+def makeStereoFromMono(monofile, stereofile):
+	# look for the same
+	if monofile == stereofile:
+		stereofile = "/tmp/42makeMeStereo1337.wav"
+	# open the files
+	monofile = wave.open(monofile, "r")
+	stereofile = wave.open(stereofile, "w")
+	# get some values
+	samplerate = monofile.getframerate()
+	samplewidth = monofile.getsampwidth()
+	frames = monofile.readframes(monofile.getnframes())
+	# set some values
+	stereofile.setnchannels(2)
+	stereofile.setsampwidth(samplewidth)
+	stereofile.setframerate(samplerate / 2)
+	# put the mono file two times into the stereo file
+	stereofile.writeframes(frames)
+	# close both
+	stereofile.close()
+	monofile.close()
+	# look again for the same
+	if monofile == stereofile:
+		# move the stereo file over the mono file
+		shutil.move(stereofile, monofile)
+		
 
 # function to make a recursiv file listing of a directory, returns a list with pathes
 def makeTree(DIR):
@@ -111,6 +138,8 @@ def makeModeration(title, artist, Last_TTS_Phrase):
 	# make the wav voice file
 	command = "espeak -v {0} -s {1} -w '{2}' '{3}'".format(TTS_Voice, TTS_Speed, wav_path, phrase)
 	toSystem(command)
+	# make the wav file stereo
+	makeStereoFromMono(wav_path, wav_path)
 	# return the wav path
 	return wav_path
 	
@@ -190,6 +219,8 @@ if __name__ == "__main__":
 					wav_path = "{0}/M_J_{1}.wav".format(TTS_Dir, Playlist_Count)
 					command = "espeak -v {0} -s {1} -w '{2}' '{3}'".format(TTS_Voice, TTS_Speed, wav_path, jingle[1])
 					toSystem(command)
+					# make it stereo
+					makeStereoFromMono(wav_path, wav_path)
 					# put the jingle into the playlist
 					random_files.append(wav_path)
 					# make the new Last_Jingle_Phrase
