@@ -14,7 +14,7 @@ import os, random, mplayer, time
 from subprocess import Popen
 
 # SETTINGS
-Music_Dir = "/home/leonard/Musik"
+Music_Dir = "/home/leonard/Music/Playlist2"
 
 Ices_Title_File = "/tmp/ices-metadata"
 Ices_PID_File = "/tmp/ices2.pid"
@@ -23,7 +23,7 @@ Playlist_Length = 60
 Playlist_File = "/tmp/playlist"
 
 TTS_Dir = "/tmp/moderation"
-TTS_Voice = "mb-us1"
+TTS_Voice = "en"
 TTS_Speed = 130
 TTS_Phrases = [
 		'The next song is "%title%" by "%artist%".',
@@ -33,17 +33,22 @@ TTS_Phrases = [
 		'Its time to play "%title%" by "%artist%".'
 ]
 
+Jingles = [
+		'You are listening to fishmixx - mixxing the waves!',
+		'I am the crazy underwater machine and you are listening to my broadcast. Look at fishmixx.de for broadcasts who are moderated by some crazy humans who made me.',
+		'This is fishmixx, your creative commons webradio. Just visit fishmixx.de if you like it.'
+]
+Jingle_Rythm = 3
+
 # DO NOT CHANGE
 random_files = [ ]
 Last_TTS_Phrase = -1
+Last_Jingle_Phrase = -1
 Current_Length = 0
 Playlist_Count = 0
+Jingle_Count = 0
 
 # PROGRAM
-
-# function to handle the log output
-def log(message):
-	print message
 
 # function to make a recursiv file listing of a directory, returns a list with pathes
 def makeTree(DIR):
@@ -63,11 +68,11 @@ def getRandomFromList(LIST):
 	
 # function to get the length of a title in minutes, returns the length in minutes
 def getTitleLength(FILE):
-	lplayer = mplayer.Player()
-	lplayer.loadfile(unicode(FILE))
-	length = lplayer.length
-	lplayer.quit() 
-	return int(length)
+	lplayer = mplayer.Player(args="-ao null")
+	lplayer.loadfile(FILE)
+	length = int(lplayer.length)
+	lplayer.quit()
+	return length
 	
 # function to execute something at the command line, returns the exit code
 def toSystem(COMMAND):
@@ -83,9 +88,9 @@ def getTags(PATH):
 	ss_path = s_path.split("-")
 	# split file ending and title name
 	title = ss_path[1].split(".")
-	title = title[0]
+	title = title[0].replace("_", " ")
 	# the artist
-	artist = ss_path[0]
+	artist = ss_path[0].replace("_", " ")
 			
 	return title, artist
 	
@@ -101,7 +106,7 @@ def makeModeration(title, artist, Last_TTS_Phrase):
 	phrase = phrase.replace("%title%", title)
 	phrase = phrase.replace("%artist%", artist)
 	# make the path
-	wav_path = "{0}/{1}_-_{2}.wav".format(TTS_Dir, title, artist).replace("'", "\'")
+	wav_path = "{0}/M_{1}_-_{2}.wav".format(TTS_Dir, title, artist).replace("'", "\'")
 	wav_path = wav_path.replace(" ", "_")
 	# make the wav voice file
 	command = "espeak -v {0} -s {1} -w '{2}' '{3}'".format(TTS_Voice, TTS_Speed, wav_path, phrase)
@@ -113,20 +118,20 @@ def makeModeration(title, artist, Last_TTS_Phrase):
 def startPlayer(Playlist_Count):
 	# make a new mplayer instance
 	player = mplayer.Player(args="-ao 'jack:port=alsa-jack.jackC.{0}.0:name=autofish'".format(Ices_PID))
+	
 	# load the playlist
 	player.loadlist(Playlist_File)
 	
 	# start the track waiter for the icecast title info
 	a = 0
 	while a < Playlist_Count:
-		# wait for a second
-		time.sleep(1)
-		# make the title info
-		metadata = player.metadata
 		# check for metadata, moderation WAV files have no tags
-		if metadata != None:
-			print "Now playing: {0} - {1}".format(metadata["Artist"], metadata["Title"])
-			metadata = "artist={0}\ntitle={1}\n".format(metadata["Artist"], metadata["Title"])
+		print player.filename
+		if player.filename[0:2] != "M_":
+			# make the title info
+			title, artist = getTags(player.filepath)
+			print "Now playing: {0} - {1}".format(artist, title)
+			metadata = "artist={0}\ntitle={1}\n".format(artist, title)
 			# set the title info
 			tinfo = open(Ices_Title_File, "w")
 			tinfo.write(metadata)
@@ -134,7 +139,7 @@ def startPlayer(Playlist_Count):
 			# send a signal to the ices process
 			toSystem("kill -usr1 {0}".format(Ices_PID))
 		# get the remaining title length
-		remaining = player.length - player.time_pos
+		remaining = player.length - player.time_pos + 2
 		# wait for the end
 		time.sleep(int(remaining))
 		# count a one up
@@ -174,6 +179,22 @@ if __name__ == "__main__":
 			new_length = Current_Length + out_length
 			# check the length
 			if new_length < Playlist_Length:
+				
+				# look if its time to play a jingle
+				if Jingle_Count == Jingle_Rythm:
+					# get a random jingle
+					jingle = getRandomFromList(Jingles)
+					while jingle[0] == Last_Jingle_Phrase:
+						jingle = getRandomFromList(Jingles)
+					# make the jingle
+					wav_path = "{0}/M_J_{1}.wav".format(TTS_Dir, Playlist_Count)
+					command = "espeak -v {0} -s {1} -w '{2}' '{3}'".format(TTS_Voice, TTS_Speed, wav_path, jingle[1])
+					toSystem(command)
+					# put the jingle into the playlist
+					random_files.append(wav_path)
+					# make the new Last_Jingle_Phrase
+					Last_Jingle_Phrase = jingle[0]
+					
 				# make the moderation
 				m_tags = getTags(out)
 				mm_path = makeModeration(m_tags[0], m_tags[1], Last_TTS_Phrase)
@@ -185,6 +206,11 @@ if __name__ == "__main__":
 				Current_Length = new_length
 				# count the Playlist_Count up
 				Playlist_Count += 1
+				# count up the jingle insert counter
+				if Jingle_Count < Jingle_Rythm:
+					Jingle_Count += 1
+				else:
+					Jingle_Count = 0					
 			else:
 				break
 			
