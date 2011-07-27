@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # By Leonard Techel, 2011
@@ -155,11 +155,10 @@ def startPlayer(Playlist_Count):
 	a = 0
 	while a < Playlist_Count:
 		# check for metadata, moderation WAV files have no tags
-		print player.filename
 		if player.filename[0:2] != "M_":
 			# make the title info
 			title, artist = getTags(player.filepath)
-			print "Now playing: {0} - {1}".format(artist, title)
+			print("Now playing: {0} - {1}".format(artist, title))
 			metadata = "artist={0}\ntitle={1}\n".format(artist, title)
 			# set the title info
 			tinfo = open(Ices_Title_File, "w")
@@ -176,7 +175,7 @@ def startPlayer(Playlist_Count):
 		
 	# stop the mplayer instance
 	player.quit()
-	print "job done."
+	print("job done.")
 	
 if __name__ == "__main__":
 	# clear the moderation directory
