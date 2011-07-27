@@ -4,13 +4,12 @@ How-To autofish:
 1) Install all dependencies:
 	Debian:
 		•	espeak
-		•	mbrola
-		•	mbrola-us1
 		•	mplayer
 		•	jackd1	(_NOT_ jackd//jackd2)
 		•	ices2
 		•	libasound2-plugins
-		•	python-pip
+		•	python3
+		•	python3-setuptools
 	Archlinux:
 		From the repositories:
 			•	espeak
@@ -19,12 +18,13 @@ How-To autofish:
 			•	alsa-utils
 			•	python-pip
 		From the AUR:
-			•	mbrola
-			•	mbrola-voices-us1
 			•	ices2
 			
 2)	Install pymplayer
-		# pip install pymplayer
+		Debian:
+			# (??? install pymplayer from the pypi.python.org for python3.)
+		Archlinux:
+			# pip install pymplayer
 		
 3)	Configure your alsa for a virtual sound interface to jack:
 		-->	Put the content of the asoundrc.txt in your ~/.asoundrc
@@ -48,5 +48,5 @@ How-To autofish:
 		3)	Create the moderation directory, default is /tmp/moderation
 				$ mkdir /tmp/moderation
 		4)	Start the script
-				$ python(2) start.py
+				$ python(3) start.py
 		5)	Enjoy your radio program while your computer is moderating it :)
