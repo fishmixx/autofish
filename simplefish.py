@@ -1,8 +1,8 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 
-# A little script that is making auto-generated playlists based on files
-# from a directory tree
+# A little script that is making auto-generated ogg playlists based on 
+# files from a directory tree
 #
 # Copyright (C) 2011 Leonard Techel
 
@@ -24,16 +24,25 @@
 # completely from the ground, excepting some functions I've made before
 # for the script of Andreas.
 
+# The script depends on:
+# • Python < 3
+# • Mutagen
+# • ffmpeg
+
 import os, random, mutagen
+from subprocess import Popen
 
 # SETTINGS
-Music_Dir			= "/home/leonard/NEW/Musik"
-Music_Dir_Badword	= "NONFREE"
-Playlist_Length		= 5	# in minutes
+Music_Dir			= "/home/leonard/NEW/Musik/sorted"	# dictionary with your music
+Music_Out_Dir		= "/tmp/eisout/"					# the slash at the end is *very* important!
+Music_Dir_Badword	= "NONFREE"							# if this word is in the path, the script won't add the file
+Music_Out_Bitrate	= "128K"							# the bitrate of the converted ogg files
+Playlist_Length		= 60								# in minutes
 
 # DO NOT CHANGE
-Music_Out			= [ ]
-Music_Out_Length	= 0
+Music_Out			= [ ]								# the script stores the pathes there
+Music_Out_Ogg		= [ ]								# the script stores the ogg pathes there
+Music_Out_Length	= 0									# initialise a variable with the playlist length
 
 # PROGRAM
 
@@ -81,6 +90,12 @@ def getTitleLength(filepath):
 def minutesFromSeconds(seconds):
 	return int(seconds / 60)
 	
+# function to execute something at the command line, returns the exit code
+def toSystem(COMMAND):
+	p = Popen(COMMAND, shell=True)
+	sts = os.waitpid(p.pid, 0)[1]
+	return sts
+	
 # START EVERYTHING
 if __name__ == "__main__":
 	# get the file list
@@ -100,7 +115,18 @@ if __name__ == "__main__":
 				Music_Out_Length = int(Music_Out_Length) + minutesFromSeconds(float(length))
 				# append the file to the playlist
 				Music_Out.append(f)
+				
+	# convert all files to ogg
+	for f in Music_Out:
+		# make the out path
+		outpath = f.split("/")
+		outpath = outpath[len(outpath)-1]
+		outpath = Music_Out_Dir + outpath + ".ogg"
+		# convert the 
+		toSystem("ffmpeg -i '{0}' -ab {1} -acodec libvorbis '{2}'".format(f, Music_Out_Bitrate, outpath))
+		# append the new path to a dictionary
+		Music_Out_Ogg.append(outpath)
 	
 	# print out the whole playlist
-	for f in Music_Out:
+	for f in Music_Out_Ogg:
 		print f
